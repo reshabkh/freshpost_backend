@@ -29,7 +29,7 @@ export class GenerationService {
     }
 
     const headers = {
-      Authorization: `Bearer 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`,
+      Authorization: `Bearer ${process.env.SORA_API_KEY}`,
       'Content-Type': 'application/json',
     };
     // 2. Instruct DALL·E to place the author’s name (“${author}”) only as a small signature in the bottom-right corner of the image.
@@ -104,7 +104,7 @@ Respond with exactly the JSON array (e.g. ["prompt for interest 1", "prompt for 
 
     const url = 'https://api.openai.com/v1/images/generations';
     const headers = {
-      Authorization: `Bearer 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`,
+      Authorization: `Bearer ${process.env.SORA_API_KEY}`,
       'Content-Type': 'application/json',
     };
 
