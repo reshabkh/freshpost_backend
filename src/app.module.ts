@@ -3,9 +3,17 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { GenerationModule } from './generation/generation.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [UsersModule, GenerationModule],
+  imports: [
+    UsersModule,
+    GenerationModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env.dev'],
+    }),
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
