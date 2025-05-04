@@ -13,19 +13,20 @@ import {
 import { v4 as uuid4 } from 'uuid';
 
 @Table({
-  tableName: 'users',
-  timestamps: true,
   underscored: true,
+  timestamps: true,
+  paranoid: true,
   freezeTableName: true,
+  tableName: 'users'
 })
-export class User extends Model<User> {
+export class User extends Model {
   @PrimaryKey
   @IsUUID(4)
   @AllowNull(false)
   @Default(uuid4)
   @Unique(true)
   @Column
-  id: string;
+  declare id: string;
 
   @Column({
     type: DataType.STRING,
@@ -33,7 +34,6 @@ export class User extends Model<User> {
   })
   name: string;
 
-  @IsEmail()
   @Column({
     type: DataType.STRING,
     allowNull: false,

@@ -1,12 +1,18 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { SignupWithEmailDto } from './dto/signup-with-email.dto';
 import { User } from './user.model';
 import { LoginWithEmailDto } from './dto/login-with-email.dto';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
+import { InjectModel } from '@nestjs/sequelize';
 
 @Injectable()
 export class UsersService {
+  constructor(
+    @InjectModel(User)
+    private readonly userModel: typeof User,
+  ) {}
+
   async signup(dto: SignupWithEmailDto): Promise<User> {
     const existingUser = await this.userModel.findOne({
       where: { email: dto.email },
