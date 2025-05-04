@@ -13,6 +13,7 @@ export class UsersController {
     const user = await this.userService.signup(dto);
     return {
       status: 'success',
+      code: 201,
       message: 'User registered successfully',
       data: user,
       errors: []
@@ -26,6 +27,7 @@ export class UsersController {
     const user = await this.userService.login(dto);
     return {
       status: 'success',
+      code: 201,
       message: 'User logged in successfully',
       data: user,
       errors: []
