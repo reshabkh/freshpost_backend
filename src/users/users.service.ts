@@ -1,52 +1,63 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { SignupWithEmailDto } from './dto/signup-with-email.dto';
 import { User } from './user.model';
 import { LoginWithEmailDto } from './dto/login-with-email.dto';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { InjectModel } from '@nestjs/sequelize';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User)
     private readonly userModel: typeof User,
+    private jwtService: JwtService,
   ) {}
 
-  async signup(dto: SignupWithEmailDto): Promise<User> {
+  async signup(payload: SignupWithEmailDto): Promise<User> {
     const existingUser = await this.userModel.findOne({
-      where: { email: dto.email },
+      where: { email: payload.email },
     });
     if (existingUser) throw new ConflictException('Email already registered');
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const hashedPassword = await bcrypt.hash(payload.password, 10);
+
+    const accessToken = this.jwtService.sign({ email: payload.email, sub: payload.email });
 
     const user = await this.userModel.create({
-      ...dto,
+      ...payload,
       password: hashedPassword,
+      accessToken
     });
 
     return user;
   }
 
-  async login(dto: LoginWithEmailDto): Promise<{ accessToken: string }> {
-    const user = await this.userModel.findOne({ where: { email: dto.email } });
-    if (!user) throw new UnauthorizedException('Invalid credentials');
+  async login(payload: LoginWithEmailDto): Promise<any> {
+    const user = await this.userModel.findOne({ where: { email: payload.email }, raw: true });
 
-    const isMatch = await bcrypt.compare(dto.password, user.password);
-    if (!isMatch) throw new UnauthorizedException('Invalid credentials');
+  if (!user) {
+    throw new UnauthorizedException('Invalid email or password');
+  }
 
-    const token = jwt.sign(
-      { userId: user.id },
-      process.env.JWT_SECRET || 'mysecret',
-      {
-        expiresIn: '1h',
-      },
-    );
+  if (!payload.password || !user.password) {
+    throw new BadRequestException('Password is required');
+  }
 
-    user.accessToken = token;
-    await user.save();
+  const isMatch = await bcrypt.compare(payload.password, user.password);
+  if (!isMatch) {
+    throw new UnauthorizedException('Invalid email or password');
+  }
 
-    return { accessToken: token };
+  const accessToken = this.jwtService.sign({ email: user.email, sub: user.id });
+
+  // Update accessToken in DB
+  await this.userModel.update(
+    { accessToken },
+    { where: { id: user.id } }
+  );
+
+    return { accessToken: accessToken, user: { ...user, password: undefined } };
   }
 }

@@ -9,14 +9,26 @@ export class UsersController {
   constructor(private readonly userService: UsersService) {}
 
   @Post('auth/signup')
-  async signup(@Body() dto: SignupWithEmailDto): Promise<User> {
-    return this.userService.signup(dto);
+  async signup(@Body() dto: SignupWithEmailDto): Promise<any> {
+    const user = await this.userService.signup(dto);
+    return {
+      status: 'success',
+      message: 'User registered successfully',
+      data: user,
+      errors: []
+    }
   }
 
   @Post('auth/login')
   async login(
     @Body() dto: LoginWithEmailDto,
-  ): Promise<{ accessToken: string }> {
-    return this.userService.login(dto);
+  ): Promise<any> {
+    const user = await this.userService.login(dto);
+    return {
+      status: 'success',
+      message: 'User logged in successfully',
+      data: user,
+      errors: []
+    }
   }
 }
