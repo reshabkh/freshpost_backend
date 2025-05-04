@@ -9,6 +9,10 @@ import { User } from './users/user.model';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env.dev'],
+    }),
     SequelizeModule.forRoot({
       dialect: 'postgres',
       host: process.env.DATABASE_HOST,
@@ -23,10 +27,6 @@ import { User } from './users/user.model';
     }),
     UsersModule,
     GenerationModule,
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: ['.env.dev'],
-    }),
   ],
   controllers: [AppController],
   providers: [AppService],
