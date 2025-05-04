@@ -6,10 +6,10 @@ import { GenerationService } from './generation.service';
 @Controller()
 export class GenerationController {
   constructor(private readonly generationService: GenerationService) {}
-  @Version('1')
+  // @Version('1')
   @Post('generate-image')
   async generateImage(@Body() payload: any) {
-    const imageUrl = await this.generationService.generateImage(payload.prompt);
+    const imageUrl = await this.generationService.generateImage(payload);
     return { imageUrl };
   }
 }
