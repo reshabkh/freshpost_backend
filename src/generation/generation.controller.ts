@@ -10,6 +10,12 @@ export class GenerationController {
   @Post('generate-image')
   async generateImage(@Body() payload: any) {
     const imageUrl = await this.generationService.generateImage(payload);
-    return { imageUrl };
+    return {
+      status: 'success',
+      code: 201,
+      message: 'Images generated successfully',
+      data: imageUrl,
+      errors: []
+    }
   }
 }

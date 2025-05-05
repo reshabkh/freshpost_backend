@@ -2,18 +2,26 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Injectable } from '@nestjs/common';
-import { firstValueFrom, lastValueFrom } from 'rxjs';
+import { lastValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
-import OpenAI from 'openai';
-import fs from 'fs';
+import { v2 as cloudinary } from 'cloudinary';
 
 @Injectable()
 export class GenerationService {
-  constructor(private readonly httpService: HttpService) {}
+  constructor(private readonly httpService: HttpService) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+  }
 
-  private readonly fieldMaxLengths: Record<string, number> = {
-    NAME: 50,
-  };
+  async uploadToCloudinary(imageUrl: string): Promise<string> {
+    const result = await cloudinary.uploader.upload(imageUrl, {
+      folder: 'user-interest-images', // optional
+    });
+    return result.secure_url; // return Cloudinary-hosted image
+  }
 
   async generateImagePrompts(payload: any): Promise<string[]> {
     const { interests, author } = payload;
@@ -138,8 +146,13 @@ Respond with exactly the JSON array (e.g. ["prompt for interest 1", "prompt for 
       // 3️⃣ Wait for all of them
       const urls = await Promise.all(requests);
 
+      const cloudUrls = await Promise.all(
+        urls.map((url) => this.uploadToCloudinary(url)),
+      );
+      return cloudUrls;
+
       // urls is now a string[] of length prompts.length
-      return urls;
+      // return urls;
     } catch (error) {
       console.log('Error generating image:', error);
       console.error(
