@@ -64,4 +64,11 @@ export class User extends Model {
     allowNull: true,
   })
   accessToken: string;
+
+  @Column({
+    type: DataType.ARRAY(DataType.STRING),
+    allowNull: true,
+  })
+  interests: string[];
+  
 }

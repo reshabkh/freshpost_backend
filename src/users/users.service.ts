@@ -60,4 +60,35 @@ export class UsersService {
 
     return { accessToken: accessToken, user: { ...user, password: undefined } };
   }
+
+  async updateUser(payload: any): Promise<any> {
+    const user = await this.userModel.findOne({ where: { id: payload.id } });
+    if (!user) throw new BadRequestException('User not found');
+
+    // if (payload.password) {
+    //   const hashedPassword = await bcrypt.hash(payload.password, 10);
+    //   payload.password = hashedPassword;
+    // }
+
+    await this.userModel.update(
+      { ...payload },
+      { where: { id: payload.id } }
+    );
+
+    return [];
+  }
+
+  async getUser(payload: any): Promise<any> {
+    const whereOptions: any = {};
+
+    if (payload.email) {
+      whereOptions.email = payload.email;
+    } else {
+      whereOptions.id = payload.id;
+    }
+    const user = await this.userModel.findOne({ where: whereOptions });
+    if (!user) throw new BadRequestException('User not found');
+
+    return user;
+  }
 }
