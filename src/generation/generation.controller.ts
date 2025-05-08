@@ -18,4 +18,16 @@ export class GenerationController {
       errors: []
     }
   }
+
+  @Post('user/get-interests')
+  async getUserInterests(@Body() payload: any) {
+    const interests = await this.generationService.getUserInterests(payload);
+    return {
+      status: 'success',
+      code: 201,
+      message: 'Images generated successfully',
+      data: interests,
+      errors: []
+    }
+  }
 }

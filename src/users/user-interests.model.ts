@@ -20,9 +20,9 @@ import { User } from './user.model';
     timestamps: true,
     paranoid: true,
     freezeTableName: true,
-    tableName: 'interests'
+    tableName: 'user_interests'
   })
-  export class Interests extends Model {
+  export class UserInterests extends Model {
     @PrimaryKey
     @IsUUID(4)
     @AllowNull(false)
@@ -47,30 +47,19 @@ import { User } from './user.model';
       type: DataType.STRING,
       allowNull: false,
     })
-    interests: string[];
-  
+    interest: string;
+
     @Column({
       type: DataType.STRING,
       allowNull: false,
     })
-    contact_no: string;
+    prompt: string;
   
     @Column({
       type: DataType.STRING,
       allowNull: true,
     })
     interestImg: string;
-  
-    @Column({
-      type: DataType.STRING,
-      allowNull: false,
-    })
-    password: string;
-  
-    @Column({
-      type: DataType.STRING,
-      allowNull: true,
-    })
-    accessToken: string;
+
   }
   

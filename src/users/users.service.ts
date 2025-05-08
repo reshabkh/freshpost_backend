@@ -6,6 +6,8 @@ import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { InjectModel } from '@nestjs/sequelize';
 import { JwtService } from '@nestjs/jwt';
+import { LoginWithContactNoDto } from './dto/login-with-contactno.dto';
+import { UserVerificationCode } from './user-verification-code.model';
 
 @Injectable()
 export class UsersService {
@@ -34,7 +36,7 @@ export class UsersService {
     return user;
   }
 
-  async login(payload: LoginWithEmailDto): Promise<any> {
+  async loginWithEmail(payload: LoginWithEmailDto): Promise<any> {
     const user = await this.userModel.findOne({ where: { email: payload.email }, raw: true });
 
   if (!user) {
@@ -59,6 +61,83 @@ export class UsersService {
   );
 
     return { accessToken: accessToken, user: { ...user, password: undefined } };
+  }
+
+  async getUserVerificationCode(payload: any): Promise<number> {
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    console.log('randomNum', randomNum);
+
+    const dbExistingVerificationCode = await UserVerificationCode.findOne({
+      where: { code: randomNum },
+      raw: true
+    });
+
+    if (dbExistingVerificationCode) {
+      return await this.getUserVerificationCode(payload.contactNo);
+    }
+
+    await UserVerificationCode.create({
+      code: randomNum,
+      contactNo: payload.contactNo
+    });
+
+    // await this.organisationVerificationCodeModel.create({
+    //     code: randomNum,
+    //     email: email
+    // });
+    return randomNum;
+  }
+
+  async loginWithContactNo(payload: LoginWithContactNoDto): Promise<any> {
+    const dbUser = await this.userModel.findOne({ where: { contactNo: payload.contactNo }, raw: true });
+
+    if (!dbUser) {
+
+      // const hashedPassword = await bcrypt.hash(payload.password, 10);
+      
+      const user = await this.userModel.create({
+        ...payload,
+        // password: hashedPassword,
+      });
+
+      const accessToken = this.jwtService.sign({ contactNo: payload.contactNo, sub: user.id });
+
+      // Update accessToken in DB
+      await this.userModel.update(
+        { accessToken },
+        { where: { id: user.id } }
+      );
+
+      return { accessToken: accessToken, user: user };
+
+    } else {
+
+      const verifyCode = await UserVerificationCode.findOne({
+        where: { contactNo: payload.contactNo, code: payload.code },
+        raw: true
+      });
+
+      if(!verifyCode) {
+        throw new BadRequestException('Invalid code');
+      }
+
+      // const isMatch = await bcrypt.compare(payload.password, dbUser.password);
+
+      // if (!isMatch) {
+      //   throw new UnauthorizedException('Incorrect password');
+      // }
+    
+      const accessToken = this.jwtService.sign({ contactNo: dbUser.contactNo, sub: dbUser.id });
+    
+      // Update accessToken in DB
+      await this.userModel.update(
+        { accessToken },
+        { where: { id: dbUser.id } }
+      );
+
+      return { accessToken: accessToken, user: dbUser };
+
+    }
   }
 
   async updateUser(payload: any): Promise<any> {

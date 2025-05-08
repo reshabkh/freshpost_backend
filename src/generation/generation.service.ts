@@ -5,6 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { lastValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { v2 as cloudinary } from 'cloudinary';
+import { UserInterests } from 'src/users/user-interests.model';
 
 @Injectable()
 export class GenerationService {
@@ -23,7 +24,7 @@ export class GenerationService {
     return result.secure_url; // return Cloudinary-hosted image
   }
 
-  async generateImagePrompts(payload: any): Promise<string[]> {
+  async generateImagePrompts(payload: any): Promise<any> {
     const { interests, author } = payload;
 
     // if (!Array.isArray(interests) || interests.length === 0) {
@@ -49,10 +50,11 @@ You are a master prompt engineer for a content-generation app. Given:
   • An author name
 
 Your job is to output **only** a JSON array of DALL·E 2 text prompts (plain strings). Each prompt must:
-1. Contain exactly one prompt per interest (so if the user passed 3 interests, you output exactly 3 prompts).
+1. Contain exactly one prompt per interest.
 2. Focus on exactly one interest from the list (do NOT combine them).
-3. Be vivid and imaginative—feel free to invent any scene, style, or detail that fits the interest.
-4. Vary the descriptions so that repeated calls produce fresh, different imagery.
+3. For each interest, generate exactly one unique prompt, based on that interest. 
+4. Be vivid and imaginative—feel free to invent any scene, style, or detail that fits the interest.
+5. Vary the descriptions so that repeated calls produce fresh, different imagery.
 Respond with exactly the JSON array (e.g. ["prompt for interest 1", "prompt for interest 2", ...]).  
 `.trim();
 
@@ -97,7 +99,13 @@ Respond with exactly the JSON array (e.g. ["prompt for interest 1", "prompt for 
         );
       }
 
-      return prompts;
+      // Return an array of objects with "interest" and "prompt"
+      const result = interests.map((interest, index) => ({
+        interest: interest,
+        prompt: prompts[index],
+      }));
+
+      return result;
     } catch (err: any) {
       console.error(
         'Error generating image prompts:',
@@ -127,13 +135,13 @@ Respond with exactly the JSON array (e.g. ["prompt for interest 1", "prompt for 
 
     try {
       // 2️⃣ Map each prompt to a request-promise returning its URL
-      const requests = prompts.map((prompt) =>
+      const requests = prompts.map((promptData) =>
         lastValueFrom(
           this.httpService.post(
             url,
             {
               model: 'dall-e-2',
-              prompt,
+              prompt: promptData.prompt,
               n: 1,
               size: '1024x1024',
               response_format: 'url',
@@ -149,6 +157,16 @@ Respond with exactly the JSON array (e.g. ["prompt for interest 1", "prompt for 
       const cloudUrls = await Promise.all(
         urls.map((url) => this.uploadToCloudinary(url)),
       );
+
+      // store user interests in DB
+      for (let i = 0; i < prompts.length; i++) {
+        await UserInterests.create({
+          userId: generateIconDto.userId,
+          interest: prompts[i].interest,
+          prompt:  prompts[i].prompt,
+          interestImg: cloudUrls[i],
+        });
+      }
       return cloudUrls;
 
       // urls is now a string[] of length prompts.length
@@ -160,6 +178,20 @@ Respond with exactly the JSON array (e.g. ["prompt for interest 1", "prompt for 
         error.response?.data || error.message,
       );
       throw new Error('Failed to generate icon');
+    }
+  }
+
+  async getUserInterests(payload: any): Promise<any> {
+    try {
+      const userInterests = await UserInterests.findAll({
+        where: { userId: payload.userId },
+        raw: true,
+      });
+
+      return userInterests;
+    } catch (error) {
+      console.error('Error fetching user interests:', error);
+      throw new Error('Failed to fetch user interests');
     }
   }
 }

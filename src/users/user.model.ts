@@ -45,7 +45,7 @@ export class User extends Model {
     type: DataType.STRING,
     allowNull: false,
   })
-  contact_no: string;
+  contactNo: string;
 
   @Column({
     type: DataType.STRING,

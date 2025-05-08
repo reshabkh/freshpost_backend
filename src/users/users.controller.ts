@@ -4,6 +4,8 @@ import { User } from 'src/users/user.model';
 import { SignupWithEmailDto } from './dto/signup-with-email.dto';
 import { LoginWithEmailDto } from './dto/login-with-email.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { LoginWithContactNoDto } from './dto/login-with-contactno.dto';
+import { GetVerificationCodeDto } from './dto/get-verification-code.dto';
 
 @Controller()
 export class UsersController {
@@ -25,7 +27,37 @@ export class UsersController {
   async login(
     @Body() dto: LoginWithEmailDto,
   ): Promise<any> {
-    const user = await this.userService.login(dto);
+    const user = await this.userService.loginWithEmail(dto);
+    return {
+      status: 'success',
+      code: 201,
+      message: 'User logged in successfully',
+      data: user,
+      errors: []
+    }
+  }
+
+  @Post('auth/get-verification-code')
+  async getVerificationCode(
+    @Body() payload: GetVerificationCodeDto,
+  ): Promise<any> {
+    const code = await this.userService.getUserVerificationCode(payload);
+    return {
+      status: 'success',
+      code: 201,
+      message: 'User verification code sent successfully',
+      data: {
+        code
+      },
+      errors: []
+    }
+  }
+
+  @Post('auth/login-contactno')
+  async loginWithContactNo(
+    @Body() payload: LoginWithContactNoDto,
+  ): Promise<any> {
+    const user = await this.userService.loginWithContactNo(payload);
     return {
       status: 'success',
       code: 201,

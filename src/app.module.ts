@@ -6,6 +6,8 @@ import { GenerationModule } from './generation/generation.module';
 import { ConfigModule } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { User } from './users/user.model';
+import { UserInterests } from './users/user-interests.model';
+import { UserVerificationCode } from './users/user-verification-code.model';
 
 @Module({
   imports: [
@@ -20,7 +22,7 @@ import { User } from './users/user.model';
       username: process.env.DATABASE_USERNAME,
       password: process.env.DATABASE_PASSWORD,
       database: process.env.DATABASE_NAME,
-      models: [User],
+      models: [User, UserInterests, UserVerificationCode],
       synchronize: true,
       autoLoadModels: true,
       logging: false
