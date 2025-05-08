@@ -108,7 +108,7 @@ export class UsersService {
         { where: { id: user.id } }
       );
 
-      return { accessToken: accessToken, user: user };
+      return { newUser: true, accessToken: accessToken, user: user };
 
     } else {
 
@@ -135,7 +135,7 @@ export class UsersService {
         { where: { id: dbUser.id } }
       );
 
-      return { accessToken: accessToken, user: dbUser };
+      return { newUser: false, accessToken: accessToken, user: dbUser };
 
     }
   }
