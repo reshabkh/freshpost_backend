@@ -6,6 +6,7 @@ import { lastValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { v2 as cloudinary } from 'cloudinary';
 import { UserInterests } from 'src/users/user-interests.model';
+import { GenerateImageDto } from './dto/generate-image.dto';
 
 @Injectable()
 export class GenerationService {
@@ -24,8 +25,7 @@ export class GenerationService {
     return result.secure_url; // return Cloudinary-hosted image
   }
 
-  async generateImagePrompts(payload: any): Promise<any> {
-    const { interests, author } = payload;
+  async generateImagePrompts(payload: GenerateImageDto): Promise<any> {
 
     // if (!Array.isArray(interests) || interests.length === 0) {
     //   throw new Error('At least one interest is required');
@@ -59,7 +59,7 @@ Respond with exactly the JSON array (e.g. ["prompt for interest 1", "prompt for 
 `.trim();
 
 
-    const userPrompt = `Interests: ${interests.join(', ')}`;
+    const userPrompt = `Interests: ${payload.interests.join(', ')}`;
 
     const promptPayload = {
       model: 'gpt-4',
@@ -77,7 +77,7 @@ Respond with exactly the JSON array (e.g. ["prompt for interest 1", "prompt for 
       );
 
       const text = res.data.choices[0].message.content.trim();
-      console.log('text:', text);
+
       // Try to parse JSON array out of the model’s response
       let prompts: string[];
       try {
@@ -93,14 +93,14 @@ Respond with exactly the JSON array (e.g. ["prompt for interest 1", "prompt for 
       }
 
       // Ensure count matches interests
-      if (prompts.length !== interests.length) {
+      if (prompts.length !== payload.interests.length) {
         console.warn(
-          `Warning: Generated ${prompts.length} prompts for ${interests.length} interests.`,
+          `Warning: Generated ${prompts.length} prompts for ${payload.interests.length} interests.`,
         );
       }
 
       // Return an array of objects with "interest" and "prompt"
-      const result = interests.map((interest, index) => ({
+      const result = payload.interests.map((interest, index) => ({
         interest: interest,
         prompt: prompts[index],
       }));
@@ -115,8 +115,8 @@ Respond with exactly the JSON array (e.g. ["prompt for interest 1", "prompt for 
     }
   }
 
-  async generateImage(generateIconDto: any): Promise<any> {
-    const prompts = await this.generateImagePrompts(generateIconDto);
+  async generateImage(payload: GenerateImageDto): Promise<any> {
+    const prompts = await this.generateImagePrompts(payload);
 
     const url = 'https://api.openai.com/v1/images/generations';
     const headers = {
@@ -161,7 +161,7 @@ Respond with exactly the JSON array (e.g. ["prompt for interest 1", "prompt for 
       // store user interests in DB
       for (let i = 0; i < prompts.length; i++) {
         await UserInterests.create({
-          userId: generateIconDto.userId,
+          userId: payload.userId,
           interest: prompts[i].interest,
           prompt:  prompts[i].prompt,
           interestImg: cloudUrls[i],
