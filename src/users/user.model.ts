@@ -43,9 +43,15 @@ export class User extends Model {
 
   @Column({
     type: DataType.STRING,
-    allowNull: false,
+    allowNull: true,
   })
   contactNo: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
+  googleId: string;
 
   @Column({
     type: DataType.STRING,

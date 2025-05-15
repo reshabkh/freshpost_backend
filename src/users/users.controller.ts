@@ -83,7 +83,7 @@ export class UsersController {
 
   @Post('user/get')
   async getUserDetails(
-    @Body() payload: UpdateUserDto,
+    @Body() payload: any,
   ): Promise<any> {
     const user = await this.userService.getUser(payload);
     return {
@@ -94,4 +94,19 @@ export class UsersController {
       errors: []
     }
   }
+
+  @Post('auth/google-login')
+  async loginWithGoogle(
+    @Body() payload: any,
+  ): Promise<any> {
+    const user = await this.userService.loginWitihGoogle(payload);
+    return {
+      status: 'success',
+      code: 201,
+      message: 'User logged in successfully',
+      data: user,
+      errors: []
+    }
+  }
+
 }

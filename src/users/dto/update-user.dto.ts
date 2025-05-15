@@ -8,6 +8,12 @@ export class UpdateUserDto {
   @IsOptional()
   profileImg: string;
 
+  @IsOptional()
+  email: string;
+
+  @IsOptional()
+  contactNo: string;
+
   @IsArray()
   @IsOptional()
   interests: string[];

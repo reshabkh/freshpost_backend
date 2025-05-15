@@ -9,6 +9,9 @@ import { JwtService } from '@nestjs/jwt';
 import { LoginWithContactNoDto } from './dto/login-with-contactno.dto';
 import { UserVerificationCode } from './user-verification-code.model';
 
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -91,6 +94,15 @@ export class UsersService {
   async loginWithContactNo(payload: LoginWithContactNoDto): Promise<any> {
     const dbUser = await this.userModel.findOne({ where: { contactNo: payload.contactNo }, raw: true });
 
+    const verifyCode = await UserVerificationCode.findOne({
+      where: { contactNo: payload.contactNo, code: payload.code },
+      raw: true
+    });
+
+    if(!verifyCode) {
+      throw new BadRequestException('Invalid code');
+    }
+
     if (!dbUser) {
 
       // const hashedPassword = await bcrypt.hash(payload.password, 10);
@@ -111,15 +123,6 @@ export class UsersService {
       return { newUser: true, accessToken: accessToken, user: user };
 
     } else {
-
-      const verifyCode = await UserVerificationCode.findOne({
-        where: { contactNo: payload.contactNo, code: payload.code },
-        raw: true
-      });
-
-      if(!verifyCode) {
-        throw new BadRequestException('Invalid code');
-      }
 
       // const isMatch = await bcrypt.compare(payload.password, dbUser.password);
 
@@ -169,5 +172,59 @@ export class UsersService {
     if (!user) throw new BadRequestException('User not found');
 
     return user;
+  }
+
+  async loginWitihGoogle(payload: any): Promise<any> {
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken: payload.idToken,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+  
+      const googlePayload = ticket.getPayload();
+      const googleId = googlePayload.sub;
+      const email = googlePayload.email;
+      const name = googlePayload.name;
+      const picture = googlePayload.picture;
+  
+      const dbUser = await this.userModel.findOne({ where: { googleId: googleId }, raw: true });
+
+    if (!dbUser) {
+      
+      const user = await this.userModel.create({
+        googleId: googleId,
+        email: email,
+        name: name,
+        profileImg: picture,
+      });
+
+      const accessToken = this.jwtService.sign({ googleId: googleId, sub: user.id });
+
+      // Update accessToken in DB
+      await this.userModel.update(
+        { accessToken },
+        { where: { id: user.id } }
+      );
+
+      return { newUser: true, accessToken: accessToken, user: user };
+
+    } else {
+    
+      const accessToken = this.jwtService.sign({ googleId: dbUser.googleId, sub: dbUser.id });
+    
+      // Update accessToken in DB
+      await this.userModel.update(
+        { accessToken },
+        { where: { id: dbUser.id } }
+      );
+
+      return { newUser: false, accessToken: accessToken, user: dbUser };
+
+    }
+
+    } catch (err) {
+      console.error(err);
+      throw new Error('error', err);
+    }
   }
 }
