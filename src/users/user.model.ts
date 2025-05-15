@@ -49,7 +49,7 @@ export class User extends Model {
 
   @Column({
     type: DataType.STRING,
-    allowNull: false,
+    allowNull: true,
   })
   googleId: string;
 
